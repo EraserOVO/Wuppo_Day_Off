@@ -30,6 +30,7 @@
 ```text
 godot --headless --path . --script tests/mud_ball_smoke.gd
 godot --headless --path . --script tests/garden_smoke.gd
+godot --headless --path . res://tests/garden_storage_smoke.tscn
 ```
 
 网络条件检查可运行：

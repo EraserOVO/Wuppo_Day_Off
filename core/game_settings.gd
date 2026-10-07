@@ -4,6 +4,7 @@ const PREFERENCES_PATH := "user://preferences.cfg"
 const ACTION_NAMES := ["向左", "向右", "跳跃 / 二段跳", "吹泡泡 / 大厅交互", "吹口哨"]
 const DEFAULT_KEYS := [[KEY_A, KEY_D, KEY_W, KEY_K, KEY_L], [KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_KP_0, KEY_KP_PERIOD]]
 const ENGLISH_TEXT := {
+	"存档位置：%s": "Save location: %s", "请关闭其他游戏窗口，从 Windows 资源管理器重新启动游戏，并检查安全软件是否阻止了存档写入。": "Close other game windows, restart the game from Windows File Explorer, and check whether security software is blocking save writes.",
 	"帽子": "Hats", "染色泡泡": "Dye Bubbles", "售出": "Sell", "购买数量": "Quantity", "1 个": "1", "5 个": "5", "确认购买": "Confirm purchase", "确认购买 · %s 斯马特": "Confirm purchase · %s Smurt", "价格：%s 斯马特": "Price: %s Smurt", "价格：%s 斯马特 · 库存：%s": "Price: %s Smurt · In stock: %s", "%s种子": "%s seed", "%s染色泡泡": "%s Dye Bubble",
 	"种下后约 %s 分钟成熟，可收获出售。": "Matures in about %s minutes, then can be harvested and sold.", "成熟作物，可在种子摊出售。": "A mature crop, ready to sell at the seed cart.", "移除当前佩戴的帽子。": "Remove the currently equipped hat.", "装饰帽子，可在物品栏中穿戴。": "A decorative hat you can equip from your inventory.", "食用后改变角色颜色。": "Eat it to change your character's color.", "本地货币，可用于购买种子和装扮。": "Local currency for seeds and apparel.",
 	"向左": "Move left", "向右": "Move right", "跳跃 / 二段跳": "Jump / Double jump", "吹泡泡 / 大厅交互": "Blow bubble / Interact", "吹口哨": "Whistle",

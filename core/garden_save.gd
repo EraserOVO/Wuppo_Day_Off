@@ -6,11 +6,13 @@ const CATALOG = preload("res://data/plant_catalog.gd")
 const HATS = preload("res://data/hat_catalog.gd")
 const LAYOUT = preload("res://core/backyard_layout.gd")
 const SAVE_PATH := "user://garden_save.json"
+const LEGACY_SAVE_PATH := "user://garden_save.json"
 const STARTING_SMURT := 0
 const SKIN_COUNT := 8
 const MATCH_REWARD := 1
 const SAVE_VERSION := 3
 var save_path := SAVE_PATH
+var legacy_save_path := LEGACY_SAVE_PATH
 var smurt := STARTING_SMURT
 var seeds: Dictionary = {}
 var produce: Dictionary = {}
@@ -20,11 +22,27 @@ var plots: Array = []
 var profiles: Dictionary = {}
 var rewarded_matches: Dictionary = {}
 var storage_error := ""
+var storage_error_path := ""
+var storage_error_code := OK
 var recovered_backup := false
 var writable := true
 
 func _ready() -> void:
+	_configure_save_paths()
 	load_save()
+
+func _configure_save_paths() -> void:
+	legacy_save_path = LEGACY_SAVE_PATH
+	if OS.get_name() != "Windows":
+		save_path = SAVE_PATH
+		return
+	var roaming := OS.get_environment("APPDATA")
+	if roaming.is_empty(): return
+	# Low integrity Windows processes can read Roaming AppData but cannot write
+	# there. LocalLow is the user-writable Windows location for those processes.
+	var app_data := roaming.get_base_dir()
+	var low_directory := app_data.path_join("LocalLow").path_join("Wuppo_Day_Off")
+	save_path = low_directory.path_join("garden_save.json")
 
 func load_save() -> void:
 	smurt = STARTING_SMURT
@@ -37,6 +55,8 @@ func load_save() -> void:
 	for _index in LAYOUT.PLOTS.size(): plots.append({})
 	profiles = {}
 	storage_error = ""
+	storage_error_path = ""
+	storage_error_code = OK
 	recovered_backup = false
 	writable = true
 	var found := FileAccess.file_exists(save_path) or FileAccess.file_exists(save_path + ".bak")
@@ -44,10 +64,24 @@ func load_save() -> void:
 	if loaded.is_empty():
 		loaded = _read_save(save_path + ".bak")
 		recovered_backup = not loaded.is_empty()
+	# Migrate the old Godot user:// location only when the new target has no
+	# save at all. A damaged new save must never be replaced with stale data.
+	if loaded.is_empty() and not found and not legacy_save_path.is_empty() and legacy_save_path != save_path:
+		var legacy_found := FileAccess.file_exists(legacy_save_path) or FileAccess.file_exists(legacy_save_path + ".bak")
+		loaded = _read_save(legacy_save_path)
+		if loaded.is_empty():
+			loaded = _read_save(legacy_save_path + ".bak")
+			recovered_backup = not loaded.is_empty()
+		if loaded.is_empty() and legacy_found:
+			found = true
+			storage_error_path = ProjectSettings.globalize_path(legacy_save_path)
+			storage_error_code = ERR_FILE_CORRUPT
+			storage_error = "旧版种植存档无法读取，已保留原文件；请恢复存档备份后重启游戏。"
 	if loaded.is_empty():
 		if found:
 			writable = false
-			storage_error = "种植存档无法读取，已保留原文件；请恢复存档备份后重启游戏。"
+			if storage_error.is_empty():
+				_storage_failure("种植存档无法读取，已保留原文件；请恢复存档备份后重启游戏。", "read", ERR_FILE_CORRUPT, save_path)
 		changed.emit()
 		return
 	var loaded_version := int(loaded["version"])
@@ -67,6 +101,7 @@ func load_save() -> void:
 	var saved_profiles: Variant = loaded.get("profiles", {})
 	if saved_profiles is Dictionary:
 		for slot in [1, 2]:
+			if not saved_profiles.has(str(slot)): continue
 			var entry: Variant = saved_profiles.get(str(slot), {})
 			if entry is Dictionary:
 				profiles[slot] = {"name": str(entry.get("name", "P%s" % slot)).strip_edges().left(24), "skin": clampi(int(entry.get("skin", 0)), 0, 7), "hat": clampi(int(entry.get("hat", 0)), 0, 4)}
@@ -146,29 +181,50 @@ func _save_data() -> Dictionary:
 	result["profiles"] = encoded_profiles
 	return result
 
+func _storage_failure(message: String, stage: String, code: int, path: String, temporary_files: Array[String] = []) -> bool:
+	storage_error = message
+	storage_error_path = ProjectSettings.globalize_path(path)
+	storage_error_code = code
+	push_warning("GardenSave %s failed: %s (%s); path=%s" % [stage, error_string(code), code, storage_error_path])
+	for temporary in temporary_files:
+		if FileAccess.file_exists(temporary): DirAccess.remove_absolute(temporary)
+	return false
+
 func save() -> bool:
 	if not writable: return false
-	var temporary := save_path + ".tmp"
+	var absolute_path := ProjectSettings.globalize_path(save_path)
+	var directory := absolute_path.get_base_dir()
+	var directory_error := DirAccess.make_dir_recursive_absolute(directory)
+	if directory_error != OK or not DirAccess.dir_exists_absolute(directory):
+		return _storage_failure("无法保存种植存档，请检查磁盘空间和存档目录权限。", "create-directory", directory_error if directory_error != OK else ERR_CANT_CREATE, absolute_path)
+	# Each process/transaction owns its temporary files. An older .tmp or another
+	# running game must never prevent opening this transaction's temporary file.
+	var nonce := "%s.%s" % [OS.get_process_id(), Time.get_ticks_usec()]
+	var temporary := absolute_path + ".tmp." + nonce
+	var backup_temporary := absolute_path + ".bak.tmp." + nonce
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
-		storage_error = "无法保存种植存档，请检查磁盘空间和存档目录权限。"
-		return false
+		return _storage_failure("无法保存种植存档，请检查磁盘空间和存档目录权限。", "open-temporary", FileAccess.get_open_error(), absolute_path)
 	file.store_string(JSON.stringify(_save_data(), "\t"))
 	file.flush()
 	var write_error := file.get_error()
 	file.close()
 	if write_error != OK:
-		storage_error = "种植存档写入失败，本次操作未扣款。"
-		return false
+		return _storage_failure("种植存档写入失败，本次操作未扣款。", "write-temporary", write_error, absolute_path, [temporary])
+	if _read_save(temporary).is_empty():
+		return _storage_failure("种植存档写入失败，本次操作未扣款。", "verify-temporary", ERR_FILE_CORRUPT, absolute_path, [temporary])
 	# Keep the previous valid save; never replace a recovered backup with corrupt data.
-	if not _read_save(save_path).is_empty():
-		if DirAccess.copy_absolute(save_path, save_path + ".bak") != OK:
-			storage_error = "无法创建种植存档备份，本次操作未扣款。"
-			return false
-	if DirAccess.rename_absolute(temporary, save_path) != OK:
-		storage_error = "无法更新种植存档，本次操作未扣款。"
-		return false
+	if not _read_save(absolute_path).is_empty():
+		var backup_error := DirAccess.copy_absolute(absolute_path, backup_temporary)
+		if backup_error == OK: backup_error = DirAccess.rename_absolute(backup_temporary, absolute_path + ".bak")
+		if backup_error != OK:
+			return _storage_failure("无法创建种植存档备份，本次操作未扣款。", "backup", backup_error, absolute_path, [temporary, backup_temporary])
+	var replace_error := DirAccess.rename_absolute(temporary, absolute_path)
+	if replace_error != OK:
+		return _storage_failure("无法更新种植存档，本次操作未扣款。", "replace", replace_error, absolute_path, [temporary])
 	storage_error = ""
+	storage_error_path = ""
+	storage_error_code = OK
 	recovered_backup = false
 	return true
 

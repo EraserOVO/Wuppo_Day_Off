@@ -9,6 +9,8 @@ func _run() -> void:
 	var probe := "user://garden_storage_probe_%s.json" % OS.get_process_id()
 	garden.save_path = probe
 	garden.load_save()
+	# Seed a test wallet; production saves correctly start with zero currency.
+	garden.smurt = 60
 	var error: String = garden.buy_seed("onion")
 	if not error.is_empty():
 		push_error("Actual user directory cannot save: " + error)

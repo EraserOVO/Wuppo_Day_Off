@@ -1195,6 +1195,12 @@ func _garden_notice() -> void:
 	if not GardenSave.storage_error.is_empty():
 		var error_label := _add_text(form, GardenSave.storage_error)
 		error_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		if not GardenSave.storage_error_path.is_empty():
+			var path_label := _add_text(form, GameSettings.text("存档位置：%s") % GardenSave.storage_error_path, 16)
+			path_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		if GardenSave.storage_error_code != ERR_FILE_CORRUPT:
+			var help_label := _add_text(form, "请关闭其他游戏窗口，从 Windows 资源管理器重新启动游戏，并检查安全软件是否阻止了存档写入。", 16)
+			help_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	elif GardenSave.recovered_backup:
 		_add_text(form, "已读取上一份有效存档备份。")
 

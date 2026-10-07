@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Wuppo: Day Off"
-config/version="0.35.1"
+config/version="0.35.3"
 run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.7")
 config/name_en="Wuppo: Day Off"
@@ -23,6 +23,10 @@ MatchController="*res://core/match_controller.gd"
 AudioManager="*res://core/audio_manager.gd"
 GameSettings="*res://core/game_settings.gd"
 GardenSave="*res://core/garden_save.gd"
+
+[debug]
+
+file_logging/enable_file_logging=true
 
 [display]
 
