@@ -1,0 +1,118 @@
+[gd_scene load_steps=8 format=3]
+[ext_resource type="Script" path="res://modes/bubble_race/bubble_race.gd" id="1"]
+[ext_resource type="Script" path="res://ui/stage_background.gd" id="2"]
+[ext_resource type="Resource" path="res://assets/characters/default_skin.tres" id="3"]
+[ext_resource type="Resource" path="res://assets/characters/skin_catalog.tres" id="4"]
+[ext_resource type="Resource" path="res://assets/hats/hat_catalog.tres" id="5"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_OwnProgress"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_right = 0
+corner_radius_bottom_left = 0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_WhistleBonus"]
+bg_color = Color(0.9, 0.24, 1.0, 0.98)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_right = 0
+corner_radius_bottom_left = 0
+
+[node name="BubbleRace" type="Node2D"]
+script = ExtResource("1")
+character_skin = ExtResource("3")
+skin_catalog = ExtResource("4")
+hat_catalog = ExtResource("5")
+[node name="Background" type="Node2D" parent="."]
+script = ExtResource("2")
+[node name="ArenaCamera" type="Camera2D" parent="."]
+position = Vector2(960, 540)
+position_smoothing_enabled = false
+[node name="Players" type="Node2D" parent="."]
+[node name="HUD" type="CanvasLayer" parent="."]
+[node name="Panel" type="VBoxContainer" parent="HUD"]
+visible = false
+offset_left = 90.0
+offset_top = 120.0
+offset_right = 870.0
+offset_bottom = 560.0
+theme_override_constants/separation = 8
+[node name="Result" type="Label" parent="HUD/Panel"]
+visible = false
+autowrap_mode = 3
+horizontal_alignment = 1
+[node name="StatsTable" type="GridContainer" parent="HUD/Panel"]
+custom_minimum_size = Vector2(0, 180)
+columns = 5
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 4
+[node name="ReturnButton" type="Button" parent="HUD/Panel"]
+focus_mode = 0
+visible = false
+text = "返回大厅，准备下一局"
+[node name="ExitButton" type="Button" parent="HUD/Panel"]
+focus_mode = 0
+visible = false
+text = "退出对局"
+
+[node name="Timer" type="Label" parent="HUD"]
+offset_left = 390.0
+offset_top = 0.0
+offset_right = 570.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+mouse_filter = 2
+text = "等待所有玩家加载……"
+
+[node name="OwnScore" type="Label" parent="HUD"]
+visible = false
+offset_left = 24.0
+offset_top = 14.0
+offset_right = 380.0
+offset_bottom = 54.0
+theme_override_font_sizes/font_size = 28
+
+[node name="EnemyScore" type="Label" parent="HUD"]
+visible = false
+offset_left = 590.0
+offset_top = 14.0
+offset_right = 936.0
+offset_bottom = 54.0
+theme_override_font_sizes/font_size = 28
+horizontal_alignment = 2
+
+[node name="Meter" type="VBoxContainer" parent="HUD"]
+offset_left = 180.0
+offset_top = 596.0
+offset_right = 780.0
+offset_bottom = 630.0
+theme_override_constants/separation = 4
+
+[node name="WhistleCooldown" type="ProgressBar" parent="HUD/Meter"]
+custom_minimum_size = Vector2(0, 8)
+max_value = 100.0
+show_percentage = false
+modulate = Color(1, 0.9, 0.08, 1)
+
+[node name="Size" type="ProgressBar" parent="HUD/Meter"]
+custom_minimum_size = Vector2(0, 20)
+show_percentage = false
+
+[node name="WhistleBonus" type="Panel" parent="HUD/Meter/Size"]
+visible = false
+anchor_right = 0.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_WhistleBonus")
+z_index = 1
+
+[node name="OwnProgress" type="Panel" parent="HUD/Meter/Size"]
+visible = false
+anchor_right = 0.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_OwnProgress")
+z_index = 2
+
+

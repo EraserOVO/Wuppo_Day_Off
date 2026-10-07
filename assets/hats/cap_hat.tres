@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="WuppoCharacterHat" load_steps=3 format=3]
+[ext_resource type="Script" path="res://data/character_hat.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/hats/cap.svg" id="2"]
+[resource]
+script = ExtResource("1")
+display_name = "紫色鸭舌帽"
+texture = ExtResource("2")
+offset = Vector2(0, -86)
